@@ -400,18 +400,14 @@ Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::end(Node* x) const
 template <class T1, class T2, class Compare>
 Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::predecessor(const Node* x) const
 {
-	Node* y = nil;
-
 	if (x->left != nil)
-		y = end(x->left);
-	else
+		return end(x->left);
+
+	Node* y = x->parent;
+	while (y != nil && x == y->left)
 	{
-		y = x->parent;
-		while (y != nil && x == y->left)
-		{
-			x = y;
-			y = y->parent;
-		}
+		x = y;
+		y = y->parent;
 	}
 
 	return y;
@@ -420,18 +416,14 @@ Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::predecessor(const Node* x) con
 template <class T1, class T2, class Compare>
 Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::successor(const Node* x) const
 {
-	Node* y = nil;
-
 	if (x->right != nil)
-		y = begin(x->right);
-	else
+		return begin(x->right);
+
+	Node* y = x->parent;
+	while (y != nil && x == y->right)
 	{
-		y = x->parent;
-		while (y != nil && x == y->right)
-		{
-			x = y;
-			y = y->parent;
-		}
+		x = y;
+		y = y->parent;
 	}
 
 	return y;
