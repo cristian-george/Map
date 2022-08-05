@@ -400,7 +400,7 @@ Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::end(Node* x) const
 template <class T1, class T2, class Compare>
 Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::predecessor(const Node* x) const
 {
-	Node* y = new Node;
+	Node* y = nil;
 
 	if (x->left != nil)
 		y = end(x->left);
@@ -420,7 +420,7 @@ Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::predecessor(const Node* x) con
 template <class T1, class T2, class Compare>
 Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::successor(const Node* x) const
 {
-	Node* y = new Node;
+	Node* y = nil;
 
 	if (x->right != nil)
 		y = begin(x->right);

@@ -10,16 +10,14 @@ class Map
 {
 private:
 	template <class T1, class T2>
-	class NodeTree
+	struct NodeTree
 	{
-	public:
 		enum class EColor
 		{
 			Red = 0,
 			Black
 		};
 
-	public:
 		NodeTree(T1 key = T1(), T2 value = T2(), EColor color = EColor::Red)
 			: key(key)
 			, value(value)
@@ -39,7 +37,6 @@ private:
 			return out;
 		}
 
-	public:
 		T1 key;
 		T2 value;
 
@@ -71,7 +68,12 @@ public:
 	class MapIterator
 	{
 	public:
-		MapIterator() : nodePtr(nullptr), tree(nullptr) {}
+		MapIterator()
+			: nodePtr(nullptr)
+			, tree(nullptr)
+		{
+
+		}
 
 		bool operator==(const MapIterator& other) const
 		{
