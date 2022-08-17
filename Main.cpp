@@ -146,6 +146,25 @@ void Example5()
 }
 #pragma endregion
 
+#pragma region Sixth example
+void Example6()
+{
+	Map<int, int, std::greater<int>> map;
+	map[20] = 21;
+	map[25] = 24;
+	map[23] = 28;
+	map[26] = 34;
+	map[21] = 17;
+
+	for (auto& it : map)
+		std::cout << it.first << ' ' << it.second << std::endl;
+
+	const auto& map2 = std::move(map);
+
+	for (auto& it : map2)
+		std::cout << it.first << ' ' << it.second << std::endl;
+}
+#pragma endregion
 
 #include <functional>
 #include <vector>
@@ -158,7 +177,8 @@ int main()
 		Example2,
 		Example3,
 		Example4,
-		Example5
+		Example5,
+		Example6
 	};
 
 	for (size_t index = 0; index < examples.size(); ++index)
