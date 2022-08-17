@@ -1,110 +1,109 @@
 #include "Map.h"
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::Map()
-	: nil(new Node)
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::Map()
+	: m_nil(new Node)
 {
-	nil->color = Node::EColor::Black;
-	root = nil;
-	root->left = root->right = root->parent = nil;
+	m_nil->Color = Node::EColor::Black;
+	m_root = m_nil;
+	m_root->Left = m_root->Right = m_root->Parent = m_nil;
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::Map(const Map& other) : nil(new Node)
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::Map(const Map& other) : m_nil(new Node)
 {
-	nil->color = Node::EColor::Black;
-	root = nil;
-	root = copyTree(other.root, other.nil);
+	m_nil->Color = Node::EColor::Black;
+	m_root = m_nil;
+	m_root = copyTree(other.m_root, other.m_nil);
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::Map(Map&& other) : nil(other.nil), root(other.root)
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::Map(Map&& other) : m_nil(other.m_nil), m_root(other.m_root)
 {
-	other.nil = nullptr;
-	other.root = nullptr;
+	other->~Map();
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::~Map()
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::~Map()
 {
-	clear(root);
-	delete root;
+	clearTree(m_root);
+	delete m_root;
 }
 
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::insert(const std::pair<T1, T2>& key_value)
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::insert(const std::pair<KeyType, ValueType>& pair)
 {
-	if (search(key_value.first) != nil)
+	if (search(pair.first) != m_nil)
 		return;
 
-	Node* x = root;
-	Node* y = nil;
-	Node* z = new Node(key_value.first, key_value.second);
+	Node* x = m_root;
+	Node* y = m_nil;
+	Node* z = new Node(pair.first, pair.second);
 
-	while (x != nil)
+	while (x != m_nil)
 	{
 		y = x;
-		if (Compare()(z->key, x->key))
-			x = x->left;
+		if (Compare()(z->Key, x->Key))
+			x = x->Left;
 		else
-			x = x->right;
+			x = x->Right;
 	}
 
-	z->parent = y;
+	z->Parent = y;
 
-	if (y == nil)
-		root = z;
+	if (y == m_nil)
+		m_root = z;
 	else
 	{
-		if (Compare()(z->key, y->key))
-			y->left = z;
+		if (Compare()(z->Key, y->Key))
+			y->Left = z;
 		else
-			y->right = z;
+			y->Right = z;
 	}
 
-	z->left = nil;
-	z->right = nil;
-	z->color = Node::EColor::Red;
+	z->Left = m_nil;
+	z->Right = m_nil;
+	z->Color = Node::EColor::Red;
 	insertHelper(z);
 }
 
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::erase(const T1& key)
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::erase(const KeyType& key)
 {
-	Node* x = new Node;
-	Node* y = new Node;
+	Node* x;
+	Node* y;
 	Node* z = search(key);
-	if (z != nil)
+	if (z != m_nil)
 	{
-		typename Node::EColor color = z->color;
-		if (z->left == nil)
+		typename Node::EColor color = z->Color;
+		if (z->Left == m_nil)
 		{
-			x = z->right;
+			x = z->Right;
 			transplant(z, x);
 		}
 		else
-			if (z->right == nil)
+			if (z->Right == m_nil)
 			{
-				x = z->left;
+				x = z->Left;
 				transplant(z, x);
 			}
 			else
 			{
 				y = successor(z);
-				color = y->color;
-				x = y->right;
-				if (y->parent == z)
-					x->parent = y;
+				color = y->Color;
+				x = y->Right;
+				if (y->Parent == z)
+					x->Parent = y;
 				else
 				{
 					transplant(y, x);
-					y->right = z->right;
-					y->right->parent = y;
+					y->Right = z->Right;
+					y->Right->Parent = y;
 				}
 				transplant(z, y);
-				y->left = z->left;
-				y->left->parent = y;
-				y->color = z->color;
+				y->Left = z->Left;
+				y->Left->Parent = y;
+				y->Color = z->Color;
 			}
 
 		delete z;
@@ -113,353 +112,360 @@ void Map<T1, T2, Compare>::erase(const T1& key)
 	}
 }
 
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::clear(Node*& x)
+template <class KeyType, class ValueType, class Compare /*= std::less<T1>*/>
+void Map<KeyType, ValueType, Compare>::clear()
 {
-	if (x == nil)
-		return;
-
-	clear(x->left);
-	clear(x->right);
-
-	delete x;
-	x = nil;
+	clearTree(m_root);
 }
 
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::print()
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::print()
 {
-	printTree(root, 0);
+	printTree(m_root, 0);
 	std::cout << std::endl << std::endl;
 }
 
-template <class T1, class T2, class Compare>
-bool Map<T1, T2, Compare>::empty()
+template <class KeyType, class ValueType, class Compare>
+bool Map<KeyType, ValueType, Compare>::empty() const
 {
-	return (root == nil);
+	return (m_root == m_nil);
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>& Map<T1, T2, Compare>::operator=(const Map& other) noexcept
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>& Map<KeyType, ValueType, Compare>::operator=(const Map& other) noexcept
 {
-	this->~Map();
-
-	root = nil = new Node(0, 0, Node::EColor::Black);
-	root->left = root->right = root->parent = nil;
-
-	root = copyTree(other.root, other.nil);
-
-	return *this;
-}
-
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>& Map<T1, T2, Compare>::operator=(Map&& other) noexcept
-{
-	std::swap(nil, other.nil);
-	std::swap(root, other.root);
-
-	return *this;
-}
-
-template <class T1, class T2, class Compare>
-T2& Map<T1, T2, Compare>::operator[](const T1& key)
-{
-	if (search(key) == nil)
-		insert(std::make_pair(key, 0));
-
-	return search(key)->value;
-}
-
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::insertHelper(Node* z)
-{
-	while (z->parent->color == Node::EColor::Red)
+	if (this != &other)
 	{
-		if (z->parent == z->parent->parent->left)
+		this->~Map();
+
+		m_root = m_nil = new Node(0, 0, Node::EColor::Black);
+		m_root->Left = m_root->Right = m_root->Parent = m_nil;
+
+		m_root = copyTree(other.m_root, other.m_nil);
+	}
+
+	return *this;
+}
+
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>& Map<KeyType, ValueType, Compare>::operator=(Map&& other) noexcept
+{
+	std::swap(m_nil, other.m_nil);
+	std::swap(m_root, other.m_root);
+
+	return *this;
+}
+
+template <class KeyType, class ValueType, class Compare>
+ValueType& Map<KeyType, ValueType, Compare>::operator[](const KeyType& key)
+{
+	insert(std::make_pair(key, ValueType()));
+	return search(key)->Value;
+}
+
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::insertHelper(Node* z)
+{
+	while (z->Parent->Color == Node::EColor::Red)
+	{
+		if (z->Parent == z->Parent->Parent->Left)
 		{
-			Node* U = z->parent->parent->right;
-			if (U->color == Node::EColor::Red)
+			Node* U = z->Parent->Parent->Right;
+			if (U->Color == Node::EColor::Red)
 			{
-				z->parent->color = Node::EColor::Black;
-				U->color = Node::EColor::Black;
-				z->parent->parent->color = Node::EColor::Red;
-				z = z->parent->parent;
+				z->Parent->Color = Node::EColor::Black;
+				U->Color = Node::EColor::Black;
+				z->Parent->Parent->Color = Node::EColor::Red;
+				z = z->Parent->Parent;
 			}
 			else
 			{
-				if (z == z->parent->right)
+				if (z == z->Parent->Right)
 				{
-					z = z->parent;
+					z = z->Parent;
 					rotationLeft(z);
 				}
-				z->parent->color = Node::EColor::Black;
-				z->parent->parent->color = Node::EColor::Red;
-				rotationRight(z->parent->parent);
+				z->Parent->Color = Node::EColor::Black;
+				z->Parent->Parent->Color = Node::EColor::Red;
+				rotationRight(z->Parent->Parent);
 			}
 		}
 		else
-			if (z->parent == z->parent->parent->right)
+			if (z->Parent == z->Parent->Parent->Right)
 			{
-				Node* U = z->parent->parent->left;
-				if (U->color == Node::EColor::Red)
+				Node* U = z->Parent->Parent->Left;
+				if (U->Color == Node::EColor::Red)
 				{
-					z->parent->color = Node::EColor::Black;
-					U->color = Node::EColor::Black;
-					z->parent->parent->color = Node::EColor::Red;
-					z = z->parent->parent;
+					z->Parent->Color = Node::EColor::Black;
+					U->Color = Node::EColor::Black;
+					z->Parent->Parent->Color = Node::EColor::Red;
+					z = z->Parent->Parent;
 				}
 				else
 				{
-					if (z == z->parent->left)
+					if (z == z->Parent->Left)
 					{
-						z = z->parent;
+						z = z->Parent;
 						rotationRight(z);
 					}
-					z->parent->color = Node::EColor::Black;
-					z->parent->parent->color = Node::EColor::Red;
-					rotationLeft(z->parent->parent);
+					z->Parent->Color = Node::EColor::Black;
+					z->Parent->Parent->Color = Node::EColor::Red;
+					rotationLeft(z->Parent->Parent);
 				}
 			}
 	}
 
-	root->color = Node::EColor::Black;
+	m_root->Color = Node::EColor::Black;
 }
 
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::transplant(Node* x, Node* y)
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::transplant(Node* x, Node* y)
 {
-	if (x->parent == nil)
-		root = y;
+	if (x->Parent == m_nil)
+		m_root = y;
 	else
 	{
-		if (x == x->parent->left)
-			x->parent->left = y;
+		if (x == x->Parent->Left)
+			x->Parent->Left = y;
 		else
-			x->parent->right = y;
+			x->Parent->Right = y;
 	}
-	y->parent = x->parent;
+	y->Parent = x->Parent;
 }
 
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::deleteHelper(Node*& x)
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::deleteHelper(Node*& x)
 {
 	Node* F;
-	while (x != root && x->color == Node::EColor::Black)
+	while (x != m_root && x->Color == Node::EColor::Black)
 	{
-		if (x == x->parent->left)
+		if (x == x->Parent->Left)
 		{
-			F = x->parent->right;
-			if (F->color == Node::EColor::Red)
+			F = x->Parent->Right;
+			if (F->Color == Node::EColor::Red)
 			{
-				F->color = Node::EColor::Black;
-				x->parent->color = Node::EColor::Red;
-				rotationLeft(x->parent);
-				F = x->parent->right;
+				F->Color = Node::EColor::Black;
+				x->Parent->Color = Node::EColor::Red;
+				rotationLeft(x->Parent);
+				F = x->Parent->Right;
 			}
 
-			if (F->left->color == Node::EColor::Black && F->right->color == Node::EColor::Black)
+			if (F->Left->Color == Node::EColor::Black && F->Right->Color == Node::EColor::Black)
 			{
-				F->color = Node::EColor::Red;
-				x = x->parent;
+				F->Color = Node::EColor::Red;
+				x = x->Parent;
 			}
 			else
 			{
-				if (F->right->color == Node::EColor::Black)
+				if (F->Right->Color == Node::EColor::Black)
 				{
-					F->left->color = Node::EColor::Black;
-					F->color = Node::EColor::Red;
+					F->Left->Color = Node::EColor::Black;
+					F->Color = Node::EColor::Red;
 					rotationRight(F);
-					F = x->parent->right;
+					F = x->Parent->Right;
 				}
 
-				F->color = x->parent->color;
-				x->parent->color = Node::EColor::Black;
-				F->right->color = Node::EColor::Black;
-				rotationLeft(x->parent);
-				x = root;
+				F->Color = x->Parent->Color;
+				x->Parent->Color = Node::EColor::Black;
+				F->Right->Color = Node::EColor::Black;
+				rotationLeft(x->Parent);
+				x = m_root;
 			}
 		}
 		else
-			if (x == x->parent->right)
+			if (x == x->Parent->Right)
 			{
-				F = x->parent->left;
-				if (F->color == Node::EColor::Red)
+				F = x->Parent->Left;
+				if (F->Color == Node::EColor::Red)
 				{
-					F->color = Node::EColor::Black;
-					x->parent->color = Node::EColor::Red;
-					rotationRight(x->parent);
-					F = x->parent->left;
+					F->Color = Node::EColor::Black;
+					x->Parent->Color = Node::EColor::Red;
+					rotationRight(x->Parent);
+					F = x->Parent->Left;
 				}
 
-				if (F->left->color == Node::EColor::Black && F->right->color == Node::EColor::Black)
+				if (F->Left->Color == Node::EColor::Black && F->Right->Color == Node::EColor::Black)
 				{
-					F->color = Node::EColor::Red;
-					x = x->parent;
+					F->Color = Node::EColor::Red;
+					x = x->Parent;
 				}
 				else
 				{
-					if (F->left->color == Node::EColor::Black)
+					if (F->Left->Color == Node::EColor::Black)
 					{
-						F->right->color = Node::EColor::Black;
-						F->color = Node::EColor::Red;
+						F->Right->Color = Node::EColor::Black;
+						F->Color = Node::EColor::Red;
 						rotationLeft(F);
-						F = x->parent->left;
+						F = x->Parent->Left;
 					}
 
-					F->color = x->parent->color;
-					x->parent->color = Node::EColor::Black;
-					F->left->color = Node::EColor::Black;
-					rotationRight(x->parent);
-					x = root;
+					F->Color = x->Parent->Color;
+					x->Parent->Color = Node::EColor::Black;
+					F->Left->Color = Node::EColor::Black;
+					rotationRight(x->Parent);
+					x = m_root;
 				}
 			}
 	}
-	x->color = Node::EColor::Black;
+	x->Color = Node::EColor::Black;
 }
 
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::rotationLeft(Node* x)
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::rotationLeft(Node* x)
 {
-	Node* y = x->right;
-	x->right = y->left;
-	if (y->left != nil)
-		y->left->parent = x;
+	Node* y = x->Right;
+	x->Right = y->Left;
+	if (y->Left != m_nil)
+		y->Left->Parent = x;
 
-	y->parent = x->parent;
-	if (x->parent == nil)
-		root = y;
+	y->Parent = x->Parent;
+	if (x->Parent == m_nil)
+		m_root = y;
 	else
 	{
-		if (x == x->parent->left)
-			x->parent->left = y;
+		if (x == x->Parent->Left)
+			x->Parent->Left = y;
 		else
-			x->parent->right = y;
+			x->Parent->Right = y;
 	}
 
-	y->left = x;
-	x->parent = y;
+	y->Left = x;
+	x->Parent = y;
 }
 
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::rotationRight(Node* x)
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::rotationRight(Node* x)
 {
-	Node* y = x->left;
-	x->left = y->right;
-	if (y->right != nil)
-		y->right->parent = x;
+	Node* y = x->Left;
+	x->Left = y->Right;
+	if (y->Right != m_nil)
+		y->Right->Parent = x;
 
-	y->parent = x->parent;
-	if (x->parent == nil)
-		root = y;
+	y->Parent = x->Parent;
+	if (x->Parent == m_nil)
+		m_root = y;
 	else
 	{
-		if (x == x->parent->right)
-			x->parent->right = y;
+		if (x == x->Parent->Right)
+			x->Parent->Right = y;
 		else
-			x->parent->left = y;
+			x->Parent->Left = y;
 	}
 
-	y->right = x;
-	x->parent = y;
+	y->Right = x;
+	x->Parent = y;
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::search(const T1& key) const
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::Node* Map<KeyType, ValueType, Compare>::search(const KeyType& key) const
 {
-	Node* x = root;
+	Node* x = m_root;
 
-	while (x != nil && x->key != key)
-		if (Compare()(key, x->key))
-			x = x->left;
+	while (x != m_nil && x->Key != key)
+		if (Compare()(key, x->Key))
+			x = x->Left;
 		else
-			x = x->right;
+			x = x->Right;
 
 	return x;
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::begin(Node* x) const
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::Node* Map<KeyType, ValueType, Compare>::begin(Node* x) const
 {
 	Node* y = x;
-	if (y != nil)
-		while (y->left != nil)
-			y = y->left;
+	if (y != m_nil)
+		while (y->Left != m_nil)
+			y = y->Left;
 	return y;
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::end(Node* x) const
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::Node* Map<KeyType, ValueType, Compare>::end(Node* x) const
 {
 	Node* y = x;
-	if (y != nil)
-		while (y->right != nil)
-			y = y->right;
+	if (y != m_nil)
+		while (y->Right != m_nil)
+			y = y->Right;
 	return y;
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::predecessor(const Node* x) const
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::Node* Map<KeyType, ValueType, Compare>::predecessor(const Node* x) const
 {
-	if (x->left != nil)
-		return end(x->left);
+	if (x->Left != m_nil)
+		return end(x->Left);
 
-	Node* y = x->parent;
-	while (y != nil && x == y->left)
+	Node* y = x->Parent;
+	while (y != m_nil && x == y->Left)
 	{
 		x = y;
-		y = y->parent;
+		y = y->Parent;
 	}
 
 	return y;
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::successor(const Node* x) const
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::Node* Map<KeyType, ValueType, Compare>::successor(const Node* x) const
 {
-	if (x->right != nil)
-		return begin(x->right);
+	if (x->Right != m_nil)
+		return begin(x->Right);
 
-	Node* y = x->parent;
-	while (y != nil && x == y->right)
+	Node* y = x->Parent;
+	while (y != m_nil && x == y->Right)
 	{
 		x = y;
-		y = y->parent;
+		y = y->Parent;
 	}
 
 	return y;
 }
 
-template <class T1, class T2, class Compare>
-void Map<T1, T2, Compare>::printTree(Node* x, int space)
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::printTree(Node* x, int space)
 {
-	if (x == nil)
+	if (x == m_nil)
 		return;
 	space += 10;
 
-	printTree(x->right, space);
+	printTree(x->Right, space);
 	std::cout << std::endl;
 
 	for (int index = 10; index < space; ++index)
 		std::cout << " ";
 
 	std::cout << *x;
-	printTree(x->left, space);
+	printTree(x->Left, space);
 }
 
-template <class T1, class T2, class Compare>
-Map<T1, T2, Compare>::Node* Map<T1, T2, Compare>::copyTree(Node* root, Node* nil) const
+template <class KeyType, class ValueType, class Compare>
+Map<KeyType, ValueType, Compare>::Node* Map<KeyType, ValueType, Compare>::copyTree(Node* root, Node* nil) const
 {
 	if (root == nil)
-		return this->nil;
+		return this->m_nil;
 
-	Node* node = new Node(root->key, root->value, root->color);
-	node->left = node->right = node->parent = this->nil;
+	Node* node = new Node(root->Key, root->Value, root->Color);
+	node->Left = node->Right = node->Parent = this->m_nil;
 
-	node->left = copyTree(root->left, nil);
-	node->left->parent = node;
+	node->Left = copyTree(root->Left, nil);
+	node->Left->Parent = node;
 
-	node->right = copyTree(root->right, nil);
-	node->right->parent = node;
+	node->Right = copyTree(root->Right, nil);
+	node->Right->Parent = node;
 
 	return node;
+}
+
+template <class KeyType, class ValueType, class Compare>
+void Map<KeyType, ValueType, Compare>::clearTree(Node*& x)
+{
+	if (x == m_nil)
+		return;
+
+	clearTree(x->Left);
+	clearTree(x->Right);
+
+	delete x;
+	x = m_nil;
 }

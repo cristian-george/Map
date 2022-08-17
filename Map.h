@@ -5,12 +5,11 @@
 
 #include <iostream>
 
-template <class T1, class T2, class Compare = std::less<T1>>
+template <class KeyType, class ValueType, class Compare = std::less<KeyType>>
 class Map
 {
 private:
-	template <class T1, class T2>
-	struct NodeTree
+	struct Node
 	{
 		enum class EColor
 		{
@@ -18,33 +17,31 @@ private:
 			Black
 		};
 
-		NodeTree(T1 key = T1(), T2 value = T2(), EColor color = EColor::Red)
-			: key(key)
-			, value(value)
-			, color(color)
-			, left(nullptr)
-			, right(nullptr)
-			, parent(nullptr)
+		Node(const KeyType& key = KeyType(), const ValueType& value = ValueType(), EColor color = EColor::Red)
+			: Key(key)
+			, Value(value)
+			, Color(color)
+			, Left(nullptr)
+			, Right(nullptr)
+			, Parent(nullptr)
 		{
 
 		}
 
-		friend std::ostream& operator<<(std::ostream& out, const NodeTree& nodeTree)
+		friend std::ostream& operator<<(std::ostream& out, const Node& node)
 		{
-			out << nodeTree.key << "|" << nodeTree.value;
-			(nodeTree.color == NodeTree::EColor::Red) ? out << "(r)" : out << "(b)";
+			out << node.Key << "|" << node.Value;
+			(node.Color == EColor::Red) ? out << "(r)" : out << "(b)";
 
 			return out;
 		}
 
-		T1 key;
-		T2 value;
+		KeyType Key;
+		ValueType Value;
 
-		EColor color;
-		NodeTree* left, * right, * parent;
+		EColor Color;
+		Node* Left, * Right, * Parent;
 	};
-
-	using Node = NodeTree<T1, T2>;
 
 public:
 	Map();
@@ -53,63 +50,63 @@ public:
 
 	~Map();
 
-	void insert(const std::pair<T1, T2>& key_value);
-	void erase(const T1& key);
-	bool empty();
-	void clear(Node*& x);
+	void insert(const std::pair<KeyType, ValueType>& key_value);
+	void erase(const KeyType& key);
+	bool empty() const;
+	void clear();
 	void print();
 
 	Map& operator=(const Map& other) noexcept;
 	Map& operator=(Map&& other) noexcept;
 
-	T2& operator[](const T1& key);
+	ValueType& operator[](const KeyType& key);
 
 public:
-	class MapIterator
+	class Iterator
 	{
 	public:
-		MapIterator()
-			: nodePtr(nullptr)
-			, tree(nullptr)
+		Iterator()
+			: m_nodePtr(nullptr)
+			, m_treePtr(nullptr)
 		{
 
 		}
 
-		bool operator==(const MapIterator& other) const
+		bool operator==(const Iterator& other) const
 		{
-			return tree = other.tree && nodePtr == other.nodePtr;
+			return m_treePtr = other.m_treePtr && m_nodePtr == other.m_nodePtr;
 		}
-		bool operator!=(const MapIterator& other) const
+		bool operator!=(const Iterator& other) const
 		{
-			return tree != other.tree or nodePtr != other.nodePtr;
-		}
-
-		const std::pair<T1, T2> operator*() const
-		{
-			return std::make_pair(nodePtr->key, nodePtr->value);
-		}
-		const std::pair<T1, T2>* operator->() const
-		{
-			return new std::pair<T1, T2>(nodePtr->key, nodePtr->value);
+			return m_treePtr != other.m_treePtr or m_nodePtr != other.m_nodePtr;
 		}
 
-		MapIterator& operator++()
+		const std::pair<KeyType, ValueType> operator*() const
 		{
-			nodePtr = tree->successor(nodePtr);
+			return std::make_pair(m_nodePtr->Key, m_nodePtr->Value);
+		}
+		const std::pair<KeyType, ValueType>* operator->() const
+		{
+			return new std::pair<KeyType, ValueType>(m_nodePtr->Key, m_nodePtr->Value);
+		}
+
+		Iterator& operator++()
+		{
+			m_nodePtr = m_treePtr->successor(m_nodePtr);
 			return *this;
 		}
-		MapIterator operator++(int)
+		Iterator operator++(int)
 		{
 			auto it = *this;
 			operator++();
 			return it;
 		}
-		MapIterator& operator--()
+		Iterator& operator--()
 		{
-			nodePtr = tree->predecessor(nodePtr);
+			m_nodePtr = m_treePtr->predecessor(m_nodePtr);
 			return *this;
 		}
-		MapIterator operator--(int)
+		Iterator operator--(int)
 		{
 			auto it = *this;
 			operator--();
@@ -117,30 +114,30 @@ public:
 		}
 
 	private:
-		friend class Map<T1, T2, Compare>;
+		friend class Map<KeyType, ValueType, Compare>;
 
-		const Node* nodePtr;
-		const Map<T1, T2, Compare>* tree;
+		const Node* m_nodePtr;
+		const Map<KeyType, ValueType, Compare>* m_treePtr;
 
-		MapIterator(const Node* parent, const Map<T1, T2, Compare>* tree)
-			: nodePtr(parent)
-			, tree(tree)
+		Iterator(const Node* nodePtr, const Map<KeyType, ValueType, Compare>* treePtr)
+			: m_nodePtr(nodePtr)
+			, m_treePtr(treePtr)
 		{
 
 		}
 	};
 
-	MapIterator find(const T1& key) const
+	Iterator find(const KeyType& key) const
 	{
-		return MapIterator(search(key), this);
+		return Iterator(search(key), this);
 	}
-	MapIterator begin() const
+	Iterator begin() const
 	{
-		return MapIterator(begin(root), this);
+		return Iterator(begin(m_root), this);
 	}
-	MapIterator end() const
+	Iterator end() const
 	{
-		return MapIterator(nil, this);
+		return Iterator(m_nil, this);
 	}
 
 private:
@@ -151,7 +148,7 @@ private:
 	void rotationLeft(Node* x);
 	void rotationRight(Node* x);
 
-	Node* search(const T1& key) const;
+	Node* search(const KeyType& key) const;
 	Node* begin(Node* x) const;
 	Node* end(Node* x) const;
 
@@ -161,9 +158,11 @@ private:
 	void printTree(Node* x, int space);
 	Node* copyTree(Node* root, Node* nil) const;
 
+	void clearTree(Node*& x);
+
 private:
-	Node* root;
-	Node* nil;
+	Node* m_root;
+	Node* m_nil;
 };
 
 #include "Map.cpp"
